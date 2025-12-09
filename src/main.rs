@@ -14,7 +14,11 @@ fn builtin_type(args: &str) {
 }
 
 fn parse_command(cmd: &str) -> Option<(&str, &str)> {
-    let (cmd, args) = cmd.split_once(" ")?;
+    if cmd.contains(" ") {
+        let (cmd, args) = cmd.split_once(" ")?;
+        return Some((cmd, args));
+    }
+    let args = "";
     Some((cmd, args))
 }
 
@@ -24,7 +28,7 @@ fn handle_command(cmd: &str) -> Result<(), &str> {
             "echo" => builtin_echo(),
             "exit" => builtin_exit(),
             "type" => builtin_type(args),
-            _ => println!("{cmd}: not found"),
+            _ => return Err("{cmd}: not found"),
         }
     } else {
         return Err("Invalid Command");
