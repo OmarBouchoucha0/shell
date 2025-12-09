@@ -9,12 +9,28 @@ fn builtin_exit() {
     std::process::exit(0);
 }
 
-fn handle_command(cmd: &str) {
-    match cmd {
-        "echo" => builtin_echo(),
-        "exit" => builtin_exit(),
-        _ => println!("{cmd}: not found"),
+fn builtin_type(args: &str) {
+    println!("ARGS : {args}");
+}
+
+fn parse_command(cmd: &str) -> Option<(&str, &str)> {
+    let (cmd, args) = cmd.split_once(" ")?;
+    Some((cmd, args))
+}
+
+fn handle_command(cmd: &str) -> Result<(), &str> {
+    if let Some((cmd, args)) = parse_command(cmd) {
+        match cmd {
+            "echo" => builtin_echo(),
+            "exit" => builtin_exit(),
+            "type" => builtin_type(args),
+            _ => println!("{cmd}: not found"),
+        }
+    } else {
+        return Err("Invalid Command");
     }
+
+    Ok(())
 }
 
 fn run() {
@@ -35,7 +51,10 @@ fn run() {
 
         let trimmed = cmd.trim();
         if !trimmed.is_empty() {
-            handle_command(trimmed);
+            if let Err(e) = handle_command(trimmed) {
+                eprintln!("Error : {e}");
+                continue;
+            }
         }
     }
 }
