@@ -4,9 +4,15 @@ fn builtin_echo() {
     println!("echo is a builtin");
 }
 
+fn builtin_exit() {
+    println!("Exiting the Program");
+    std::process::exit(0);
+}
+
 fn handle_command(cmd: &str) {
     match cmd {
         "echo" => builtin_echo(),
+        "exit" => builtin_exit(),
         _ => println!("{cmd}: not found"),
     }
 }
@@ -37,4 +43,3 @@ fn run() {
 fn main() {
     run();
 }
-
