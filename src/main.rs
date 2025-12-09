@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
-fn builtin_echo() {
-    println!("echo is a builtin");
+fn builtin_echo(args: &str) {
+    println!("{args}");
 }
 
 fn builtin_exit() {
@@ -25,15 +25,14 @@ fn parse_command(cmd: &str) -> Option<(&str, &str)> {
 fn handle_command(cmd: &str) -> Result<(), &str> {
     if let Some((cmd, args)) = parse_command(cmd) {
         match cmd {
-            "echo" => builtin_echo(),
+            "echo" => builtin_echo(args),
             "exit" => builtin_exit(),
             "type" => builtin_type(args),
-            _ => return Err("{cmd}: not found"),
+            _ => return Err("Command: not found"),
         }
     } else {
-        return Err("Invalid Command");
+        return Err("Command: not found");
     }
-
     Ok(())
 }
 
