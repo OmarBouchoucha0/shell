@@ -8,6 +8,12 @@ struct BuiltinCommand {
     name: String,
 }
 
+enum BuiltinCommands {
+    Exit,
+    Ctype,
+    Echo,
+}
+
 impl BuiltinCommand {
     fn new(name: &str) -> Self {
         BuiltinCommand {
