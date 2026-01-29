@@ -1,5 +1,32 @@
 use std::io::{self, Write};
 
+trait Execute {
+    fn execute(&self, args: &str) -> Result<(), String>;
+}
+
+struct BuiltinCommand {
+    name: String,
+}
+
+impl BuiltinCommand {
+    fn new(name: &str) -> Self {
+        BuiltinCommand {
+            name: name.to_string(),
+        }
+    }
+}
+
+impl Execute for BuiltinCommand {
+    fn execute(&self, args: &str) -> Result<(), String> {
+        match self.name.as_str() {
+            "echo" => Ok(builtin_echo(args)),
+            "exit" => Ok(builtin_exit()),
+            "type" => Ok(builtin_type(args)),
+            _ => Err(format!("Unknown builtin command: {}", self.name)),
+        }
+    }
+}
+
 fn builtin_echo(args: &str) {
     println!("{args}");
 }
@@ -13,25 +40,21 @@ fn builtin_type(args: &str) {
     println!("ARGS : {args}");
 }
 
-fn parse_command(cmd: &str) -> Option<(&str, &str)> {
-    if cmd.contains(" ") {
-        let (cmd, args) = cmd.split_once(" ")?;
+fn parse_input(input: &str) -> Option<(&str, &str)> {
+    if input.contains(" ") {
+        let (cmd, args) = input.split_once(" ")?;
         return Some((cmd, args));
     }
     let args = "";
-    Some((cmd, args))
+    Some((input, args))
 }
 
-fn handle_command(cmd: &str) -> Result<(), &str> {
-    if let Some((cmd, args)) = parse_command(cmd) {
-        match cmd {
-            "echo" => builtin_echo(args),
-            "exit" => builtin_exit(),
-            "type" => builtin_type(args),
-            _ => return Err("Command: not found"),
-        }
+fn handle_command(input: &str) -> Result<(), String> {
+    if let Some((cmd, args)) = parse_input(input) {
+        let cmd = BuiltinCommand::new(cmd);
+        cmd.execute(args)?;
     } else {
-        return Err("Command: not found");
+        return Err(format!("Command {}: not found", input));
     }
     Ok(())
 }
