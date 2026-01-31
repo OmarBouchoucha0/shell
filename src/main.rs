@@ -56,9 +56,12 @@ fn builtin_exit(_args: &str) -> Result<(), String> {
 }
 
 fn builtin_type(args: &str) -> Result<(), String> {
+    if args.chars().all(char::is_whitespace) {
+        return Ok(());
+    }
     let dispatch_table = build_dispatch_table();
     for arg in args.split(" ") {
-        if dispatch_table.contains_key(args) {
+        if dispatch_table.contains_key(arg) {
             println!("{arg} : BUILTIN");
         } else {
             println!("{arg} : EXTERNAL OR UNKNOW COMMAND");
