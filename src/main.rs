@@ -1,17 +1,14 @@
+use std::collections::HashMap;
 use std::io::{self, Write};
 
 trait Execute {
     fn execute(&self, args: &str) -> Result<(), String>;
 }
 
+type CommandFn = Box<dyn Fn(&str) -> Result<(), String>>;
+
 struct BuiltinCommand {
     name: String,
-}
-
-enum BuiltinCommands {
-    Exit,
-    Ctype,
-    Echo,
 }
 
 impl BuiltinCommand {
@@ -22,28 +19,52 @@ impl BuiltinCommand {
     }
 }
 
+fn build_dispatch_table() -> HashMap<&'static str, CommandFn> {
+    let mut map: HashMap<&'static str, CommandFn> = HashMap::new();
+
+    map.insert("echo", Box::new(|args| builtin_echo(args)));
+    map.insert("exit", Box::new(|args| builtin_exit(args)));
+    map.insert("type", Box::new(|args| builtin_type(args)));
+
+    map
+}
+
 impl Execute for BuiltinCommand {
     fn execute(&self, args: &str) -> Result<(), String> {
-        match self.name.as_str() {
-            "echo" => Ok(builtin_echo(args)),
-            "exit" => Ok(builtin_exit()),
-            "type" => Ok(builtin_type(args)),
-            _ => Err(format!("Unknown builtin command: {}", self.name)),
+        let dispatch_table = build_dispatch_table();
+        if dispatch_table.contains_key(self.name.as_str()) {
+            if let Some(func) = dispatch_table.get(self.name.as_str()) {
+                return func(args);
+            } else {
+                return Err(format!("Unknown builtin command: {}", self.name));
+            }
+        } else {
+            return Err(format!("Unknown builtin command: {}", self.name));
         }
     }
 }
 
-fn builtin_echo(args: &str) {
+fn builtin_echo(args: &str) -> Result<(), String> {
     println!("{args}");
+    Ok(())
 }
 
-fn builtin_exit() {
+//we use the args to match the func signature in cmdFn
+fn builtin_exit(_args: &str) -> Result<(), String> {
     println!("Exiting the Program");
     std::process::exit(0);
 }
 
-fn builtin_type(args: &str) {
-    println!("ARGS : {args}");
+fn builtin_type(args: &str) -> Result<(), String> {
+    let dispatch_table = build_dispatch_table();
+    for arg in args.split(" ") {
+        if dispatch_table.contains_key(args) {
+            println!("{arg} : BUILTIN");
+        } else {
+            println!("{arg} : EXTERNAL OR UNKNOW COMMAND");
+        }
+    }
+    Ok(())
 }
 
 fn parse_input(input: &str) -> Option<(&str, &str)> {
