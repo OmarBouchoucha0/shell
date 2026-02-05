@@ -1,98 +1,11 @@
-use std::collections::HashMap;
+mod builtin;
+mod command;
+mod external;
+
+use builtin::{build_dispatch_table, BuiltinCommand};
+use command::Execute;
+use external::NonBuiltinCommand;
 use std::io::{self, Write};
-use std::process::Command;
-
-trait Execute {
-    fn execute(&self, args: Vec<String>) -> Result<(), String>;
-}
-
-type CommandFn = Box<dyn Fn(Vec<String>) -> Result<(), String>>;
-
-struct BuiltinCommand {
-    name: String,
-}
-
-impl BuiltinCommand {
-    fn new(name: &str) -> Self {
-        BuiltinCommand {
-            name: name.to_string(),
-        }
-    }
-}
-
-struct NonBuiltinCommand {
-    name: String,
-}
-
-impl NonBuiltinCommand {
-    fn new(name: &str) -> Self {
-        NonBuiltinCommand {
-            name: name.to_string(),
-        }
-    }
-}
-
-impl Execute for NonBuiltinCommand {
-    fn execute(&self, args: Vec<String>) -> Result<(), String> {
-        match Command::new(&self.name).args(args).output() {
-            Ok(output) => {
-                println!("{}", String::from_utf8_lossy(&output.stdout));
-                Ok(())
-            }
-            Err(_) => Err(format!("Unknown command: {}", self.name)),
-        }
-    }
-}
-
-fn build_dispatch_table_builtin_command() -> HashMap<String, CommandFn> {
-    let mut map: HashMap<String, CommandFn> = HashMap::new();
-
-    map.insert("echo".to_string(), Box::new(builtin_echo));
-    map.insert("exit".to_string(), Box::new(builtin_exit));
-    map.insert("type".to_string(), Box::new(builtin_type));
-
-    map
-}
-
-impl Execute for BuiltinCommand {
-    fn execute(&self, args: Vec<String>) -> Result<(), String> {
-        let dispatch_table = build_dispatch_table_builtin_command();
-        if dispatch_table.contains_key(self.name.as_str()) {
-            if let Some(func) = dispatch_table.get(self.name.as_str()) {
-                func(args)
-            } else {
-                Err(format!("Unknown builtin command: {}", self.name))
-            }
-        } else {
-            Err(format!("Unknown builtin command: {}", self.name))
-        }
-    }
-}
-
-fn builtin_echo(args: Vec<String>) -> Result<(), String> {
-    println!("{:?}", args);
-    Ok(())
-}
-
-fn builtin_exit(_args: Vec<String>) -> Result<(), String> {
-    println!("Exiting the Program");
-    std::process::exit(0);
-}
-
-fn builtin_type(args: Vec<String>) -> Result<(), String> {
-    let dispatch_table = build_dispatch_table_builtin_command();
-    for arg in args {
-        if arg.chars().all(char::is_whitespace) {
-            println!("");
-        }
-        if dispatch_table.contains_key(&arg) {
-            println!("{arg} : BUILTIN");
-        } else {
-            println!("{arg} : EXTERNAL OR UNKNOW COMMAND");
-        }
-    }
-    Ok(())
-}
 
 fn parse_args(args: &str) -> Vec<String> {
     let mut output: Vec<String> = Vec::new();
@@ -113,7 +26,7 @@ fn parse_input(input: &str) -> Option<(&str, &str)> {
 
 fn handle_command(input: &str) -> Result<(), String> {
     if let Some((cmd, args)) = parse_input(input) {
-        let dispatch_table = build_dispatch_table_builtin_command();
+        let dispatch_table = build_dispatch_table();
         let args = parse_args(args);
         if dispatch_table.contains_key(cmd) {
             let cmd = BuiltinCommand::new(cmd);
