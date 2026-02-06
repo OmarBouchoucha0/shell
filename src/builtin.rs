@@ -23,17 +23,19 @@ pub fn build_dispatch_table() -> HashMap<String, CommandFn> {
     map.insert("exit".to_string(), Box::new(exit));
     map.insert("pwd".to_string(), Box::new(pwd));
     map.insert("cd".to_string(), Box::new(cd));
+    map.insert("history".to_string(), Box::new(history));
     map.insert("type".to_string(), Box::new(type_cmd));
 
     map
 }
 
 impl Execute for BuiltinCommand {
-    fn execute(&self, args: Vec<String>) -> Result<(), String> {
+    fn execute(&self, args: Vec<String>, history: &mut Vec<String>) -> Result<(), String> {
         let dispatch_table = build_dispatch_table();
         if dispatch_table.contains_key(self.name.as_str()) {
             if let Some(func) = dispatch_table.get(self.name.as_str()) {
-                func(args)
+                history.push(self.name.clone());
+                func(args, history)
             } else {
                 Err(format!("Erreur Executing Command: {}", self.name))
             }
@@ -43,23 +45,23 @@ impl Execute for BuiltinCommand {
     }
 }
 
-fn echo(args: Vec<String>) -> Result<(), String> {
+fn echo(args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
     let output = args.join(" ");
     println!("{output}");
     Ok(())
 }
 
-fn exit(_args: Vec<String>) -> Result<(), String> {
+fn exit(_args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
     std::process::exit(0);
 }
 
-fn pwd(_args: Vec<String>) -> Result<(), String> {
+fn pwd(_args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
     let current_dir = env::current_dir().map_err(|e| e.to_string())?;
     println!("The current directory is: {}", current_dir.display());
     Ok(())
 }
 
-fn cd(args: Vec<String>) -> Result<(), String> {
+fn cd(args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
     if args.len() > 1 {
         return Err("CD only 1 takes 1 Path".to_string());
     }
@@ -69,7 +71,16 @@ fn cd(args: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
-fn type_cmd(args: Vec<String>) -> Result<(), String> {
+fn history(_args: Vec<String>, history: &Vec<String>) -> Result<(), String> {
+    let mut i: u32 = 1;
+    for line in history {
+        println!("{i} {line}");
+        i += 1;
+    }
+    Ok(())
+}
+
+fn type_cmd(args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
     let dispatch_table = build_dispatch_table();
     if let Some(arg) = args.into_iter().next() {
         if arg.chars().all(char::is_whitespace) {

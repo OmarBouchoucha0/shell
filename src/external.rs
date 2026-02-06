@@ -15,9 +15,10 @@ impl NonBuiltinCommand {
 }
 
 impl Execute for NonBuiltinCommand {
-    fn execute(&self, args: Vec<String>) -> Result<(), String> {
+    fn execute(&self, args: Vec<String>, history: &mut Vec<String>) -> Result<(), String> {
         match Command::new(&self.name).args(args).output() {
             Ok(output) => {
+                history.push(self.name.clone());
                 print!("{}", String::from_utf8_lossy(&output.stdout));
                 Ok(())
             }

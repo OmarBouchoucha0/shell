@@ -25,16 +25,16 @@ fn parse_input(input: &str) -> Option<(&str, &str)> {
     Some((input, args))
 }
 
-fn handle_command(input: &str) -> Result<(), String> {
+fn handle_command(input: &str, history: &mut Vec<String>) -> Result<(), String> {
     if let Some((cmd, args)) = parse_input(input) {
         let dispatch_table = build_dispatch_table();
         let args = parse_args(args);
         if dispatch_table.contains_key(cmd) {
             let cmd = BuiltinCommand::new(cmd);
-            cmd.execute(args)?;
+            cmd.execute(args, history)?;
         } else {
             let cmd = NonBuiltinCommand::new(cmd);
-            cmd.execute(args)?;
+            cmd.execute(args, history)?;
         }
     } else {
         return Err(format!("Command {}: not found", input));
@@ -44,6 +44,7 @@ fn handle_command(input: &str) -> Result<(), String> {
 
 fn run() {
     let mut cmd = String::new();
+    let mut history: Vec<String> = Vec::new();
     loop {
         cmd.clear();
         match env::current_dir() {
@@ -65,7 +66,7 @@ fn run() {
 
         let trimmed = cmd.trim();
         if !trimmed.is_empty()
-            && let Err(e) = handle_command(trimmed)
+            && let Err(e) = handle_command(trimmed, &mut history)
         {
             eprintln!("Error : {e}");
             continue;
