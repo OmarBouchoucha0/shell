@@ -61,11 +61,11 @@ fn pwd(_args: Vec<String>) -> Result<(), String> {
 
 fn cd(args: Vec<String>) -> Result<(), String> {
     if args.len() > 1 {
-        return Err(format!("CD only 1 takes 1 Path"));
+        return Err("CD only 1 takes 1 Path".to_string());
     }
     let path_str = args.join("");
     let path = Path::new(&path_str);
-    env::set_current_dir(&path).map_err(|e| e.to_string())?;
+    env::set_current_dir(path).map_err(|e| e.to_string())?;
     Ok(())
 }
 
