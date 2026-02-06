@@ -51,9 +51,9 @@ fn exit(_args: Vec<String>) -> Result<(), String> {
 
 fn type_cmd(args: Vec<String>) -> Result<(), String> {
     let dispatch_table = build_dispatch_table();
-    for arg in args {
+    if let Some(arg) = args.into_iter().next() {
         if arg.chars().all(char::is_whitespace) {
-            println!("");
+            println!();
             return Ok(());
         }
         if dispatch_table.contains_key(&arg) {
