@@ -1,6 +1,8 @@
 use crate::command::{CommandFn, Execute};
 use crate::external::external_command_exists;
 use std::collections::HashMap;
+use std::env;
+use std::path::Path;
 
 pub struct BuiltinCommand {
     name: String,
@@ -19,6 +21,8 @@ pub fn build_dispatch_table() -> HashMap<String, CommandFn> {
 
     map.insert("echo".to_string(), Box::new(echo));
     map.insert("exit".to_string(), Box::new(exit));
+    map.insert("pwd".to_string(), Box::new(pwd));
+    map.insert("cd".to_string(), Box::new(cd));
     map.insert("type".to_string(), Box::new(type_cmd));
 
     map
@@ -47,6 +51,22 @@ fn echo(args: Vec<String>) -> Result<(), String> {
 
 fn exit(_args: Vec<String>) -> Result<(), String> {
     std::process::exit(0);
+}
+
+fn pwd(_args: Vec<String>) -> Result<(), String> {
+    let current_dir = env::current_dir().map_err(|e| e.to_string())?;
+    println!("The current directory is: {}", current_dir.display());
+    Ok(())
+}
+
+fn cd(args: Vec<String>) -> Result<(), String> {
+    if args.len() > 1 {
+        return Err(format!("CD only 1 takes 1 Path"));
+    }
+    let path_str = args.join("");
+    let path = Path::new(&path_str);
+    env::set_current_dir(&path).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 fn type_cmd(args: Vec<String>) -> Result<(), String> {
