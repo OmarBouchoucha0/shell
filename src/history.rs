@@ -25,14 +25,17 @@ impl History {
         self.size += 1;
     }
 
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.size == 0
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> u32 {
         self.size
     }
 
+    #[allow(dead_code)]
     pub fn capacity(&self) -> u32 {
         self.capacity
     }
