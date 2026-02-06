@@ -1,5 +1,6 @@
 use crate::command::Execute;
 use std::process::Command;
+use std::{env, path::Path};
 
 pub struct NonBuiltinCommand {
     name: String,
@@ -23,6 +24,23 @@ impl Execute for NonBuiltinCommand {
             Err(_) => Err(format!("Unknown command: {}", self.name)),
         }
     }
+}
+
+pub fn external_command_exists(cmd: &str) -> bool {
+    if cmd.contains('/') {
+        return Path::new(cmd).exists();
+    }
+
+    if let Some(path_var) = env::var_os("PATH") {
+        for dir in env::split_paths(&path_var) {
+            let full = dir.join(cmd);
+            if full.is_file() {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 #[cfg(test)]

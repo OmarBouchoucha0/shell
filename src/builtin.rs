@@ -1,4 +1,5 @@
 use crate::command::{CommandFn, Execute};
+use crate::external::external_command_exists;
 use std::collections::HashMap;
 
 pub struct BuiltinCommand {
@@ -30,7 +31,7 @@ impl Execute for BuiltinCommand {
             if let Some(func) = dispatch_table.get(self.name.as_str()) {
                 func(args)
             } else {
-                Err(format!("Unknown builtin command: {}", self.name))
+                Err(format!("Erreur Executing Command: {}", self.name))
             }
         } else {
             Err(format!("Unknown builtin command: {}", self.name))
@@ -39,12 +40,12 @@ impl Execute for BuiltinCommand {
 }
 
 fn echo(args: Vec<String>) -> Result<(), String> {
-    println!("{:?}", args);
+    let output = args.join(" ");
+    println!("{output}");
     Ok(())
 }
 
 fn exit(_args: Vec<String>) -> Result<(), String> {
-    println!("Exiting the Program");
     std::process::exit(0);
 }
 
@@ -53,11 +54,18 @@ fn type_cmd(args: Vec<String>) -> Result<(), String> {
     for arg in args {
         if arg.chars().all(char::is_whitespace) {
             println!("");
+            return Ok(());
         }
         if dispatch_table.contains_key(&arg) {
             println!("{arg} : BUILTIN");
+            return Ok(());
+        }
+        if external_command_exists(&arg) {
+            println!("{arg} : EXTERNAL");
+            return Ok(());
         } else {
-            println!("{arg} : EXTERNAL OR UNKNOW COMMAND");
+            println!("{arg} : UNKNOW COMMAND");
+            return Ok(());
         }
     }
     Ok(())
