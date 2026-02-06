@@ -5,6 +5,7 @@ mod external;
 use builtin::{BuiltinCommand, build_dispatch_table};
 use command::Execute;
 use external::NonBuiltinCommand;
+use std::env;
 use std::io::{self, Write};
 
 fn parse_args(args: &str) -> Vec<String> {
@@ -45,7 +46,12 @@ fn run() {
     let mut cmd = String::new();
     loop {
         cmd.clear();
-        print!("$ ");
+        match env::current_dir() {
+            Ok(dir) => {
+                print!("{}$ ", dir.display());
+            }
+            Err(e) => eprintln!("Error: {e}"),
+        }
 
         if let Err(e) = io::stdout().flush() {
             eprintln!("Error: {e}");

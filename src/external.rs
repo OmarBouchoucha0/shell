@@ -18,7 +18,7 @@ impl Execute for NonBuiltinCommand {
     fn execute(&self, args: Vec<String>) -> Result<(), String> {
         match Command::new(&self.name).args(args).output() {
             Ok(output) => {
-                println!("{}", String::from_utf8_lossy(&output.stdout));
+                print!("{}", String::from_utf8_lossy(&output.stdout));
                 Ok(())
             }
             Err(_) => Err(format!("Unknown command: {}", self.name)),
