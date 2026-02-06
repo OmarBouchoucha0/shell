@@ -34,8 +34,11 @@ impl Execute for BuiltinCommand {
         let dispatch_table = build_dispatch_table();
         if dispatch_table.contains_key(self.name.as_str()) {
             if let Some(func) = dispatch_table.get(self.name.as_str()) {
-                history.push(self.name.clone());
-                func(args, history)
+                let result = func(args, history);
+                if result.is_ok() {
+                    history.push(self.name.clone());
+                }
+                result
             } else {
                 Err(format!("Erreur Executing Command: {}", self.name))
             }
@@ -119,37 +122,49 @@ mod tests {
         assert!(table.contains_key("exit"));
         assert!(table.contains_key("pwd"));
         assert!(table.contains_key("cd"));
+        assert!(table.contains_key("history"));
         assert!(table.contains_key("type"));
-        assert_eq!(table.len(), 5);
+        assert_eq!(table.len(), 6);
     }
 
     #[test]
     fn test_builtin_command_execute_echo() {
         let cmd = BuiltinCommand::new("echo");
-        let result = cmd.execute(vec!["hello".to_string(), "world".to_string()]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec!["hello".to_string(), "world".to_string()], &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_builtin_command_execute_type_builtin() {
         let cmd = BuiltinCommand::new("type");
-        let result = cmd.execute(vec!["echo".to_string()]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec!["echo".to_string()], &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "type");
     }
 
     #[test]
     fn test_builtin_command_execute_type_external() {
         let cmd = BuiltinCommand::new("type");
-        let result = cmd.execute(vec!["ls".to_string()]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec!["ls".to_string()], &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "type");
     }
 
     #[test]
     fn test_builtin_command_execute_unknown() {
         let cmd = BuiltinCommand::new("unknown");
-        let result = cmd.execute(vec![]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec![], &mut history);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unknown builtin command"));
+        assert!(history.is_empty());
     }
 
     #[test]
@@ -160,51 +175,91 @@ mod tests {
 
     #[test]
     fn test_echo_empty_args() {
-        let result = echo(vec![]);
+        let history = Vec::new();
+        let result = echo(vec![], &history);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_single_arg() {
-        let result = echo(vec!["hello".to_string()]);
+        let history = Vec::new();
+        let result = echo(vec!["hello".to_string()], &history);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_multiple_args() {
-        let result = echo(vec![
-            "hello".to_string(),
-            "world".to_string(),
-            "test".to_string(),
-        ]);
+        let history = Vec::new();
+        let result = echo(
+            vec!["hello".to_string(), "world".to_string(), "test".to_string()],
+            &history,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_with_spaces() {
-        let result = echo(vec!["hello world".to_string()]);
+        let history = Vec::new();
+        let result = echo(vec!["hello world".to_string()], &history);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_empty_args() {
-        let result = type_cmd(vec![]);
+        let history = Vec::new();
+        let result = type_cmd(vec![], &history);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_whitespace_arg() {
-        let result = type_cmd(vec!["   ".to_string()]);
+        let history = Vec::new();
+        let result = type_cmd(vec!["   ".to_string()], &history);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_multiple_args_mixed() {
-        let result = type_cmd(vec![
-            "echo".to_string(),
-            "ls".to_string(),
-            "exit".to_string(),
-        ]);
+        let history = Vec::new();
+        let result = type_cmd(
+            vec!["echo".to_string(), "ls".to_string(), "exit".to_string()],
+            &history,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pwd() {
+        let history = Vec::new();
+        let result = pwd(vec![], &history);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_cd() {
+        let history = Vec::new();
+        let result = cd(vec![".".to_string()], &history);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_cd_no_args() {
+        let history = Vec::new();
+        let result = cd(vec![], &history);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_history() {
+        let hist = vec!["echo".to_string(), "ls".to_string()];
+        let result = history(vec![], &hist);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_history_empty() {
+        let hist = Vec::new();
+        let result = history(vec![], &hist);
         assert!(result.is_ok());
     }
 }

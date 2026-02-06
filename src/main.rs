@@ -180,57 +180,103 @@ mod tests {
 
     #[test]
     fn test_handle_command_builtin_echo() {
-        let result = handle_command("echo hello world");
+        let mut history = Vec::new();
+        let result = handle_command("echo hello world", &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_handle_command_builtin_type() {
-        let result = handle_command("type echo");
+        let mut history = Vec::new();
+        let result = handle_command("type echo", &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "type");
     }
 
     #[test]
     fn test_handle_command_external() {
-        let result = handle_command("echo test");
+        let mut history = Vec::new();
+        let result = handle_command("echo test", &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_handle_command_unknown_external() {
-        let result = handle_command("nonexistentcommand123");
+        let mut history = Vec::new();
+        let result = handle_command("nonexistentcommand123", &mut history);
         assert!(result.is_err());
+        assert!(history.is_empty());
     }
 
     #[test]
     fn test_handle_command_empty() {
-        let result = handle_command("");
+        let mut history = Vec::new();
+        let result = handle_command("", &mut history);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_handle_command_only_whitespace() {
-        let result = handle_command("   ");
+        let mut history = Vec::new();
+        let result = handle_command("   ", &mut history);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_builtin_command_exit() {
+    fn test_handle_command_builtin_pwd() {
+        let mut history = Vec::new();
+        let result = handle_command("pwd", &mut history);
+        assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "pwd");
+    }
+
+    #[test]
+    fn test_handle_command_builtin_history() {
+        let mut history = Vec::new();
+        let result = handle_command("echo hello", &mut history);
+        assert!(result.is_ok());
+        let result = handle_command("history", &mut history);
+        assert!(result.is_ok());
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0], "echo");
+        assert_eq!(history[1], "history");
+    }
+
+    #[test]
+    fn test_build_dispatch_table_contents() {
         let table = build_dispatch_table();
+        assert_eq!(table.len(), 6);
+        assert!(table.contains_key("echo"));
         assert!(table.contains_key("exit"));
+        assert!(table.contains_key("type"));
+        assert!(table.contains_key("pwd"));
+        assert!(table.contains_key("cd"));
+        assert!(table.contains_key("history"));
     }
 
     #[test]
     fn test_execute_trait_builtin() {
         let cmd = BuiltinCommand::new("echo");
-        let result = cmd.execute(vec!["test".to_string()]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec!["test".to_string()], &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_execute_trait_external() {
         let cmd = NonBuiltinCommand::new("echo");
-        let result = cmd.execute(vec!["test".to_string()]);
+        let mut history = Vec::new();
+        let result = cmd.execute(vec!["test".to_string()], &mut history);
         assert!(result.is_ok());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0], "echo");
     }
 }
