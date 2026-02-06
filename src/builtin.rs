@@ -65,6 +65,12 @@ fn pwd(_args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
 }
 
 fn cd(args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
+    if args.len() == 0 {
+        match env::home_dir() {
+            Some(path) => env::set_current_dir(path).map_err(|e| e.to_string())?,
+            None => return Err(format!("Home Directory not Found")),
+        }
+    }
     if args.len() > 1 {
         return Err("CD only 1 takes 1 Path".to_string());
     }
