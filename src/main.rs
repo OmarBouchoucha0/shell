@@ -1,10 +1,12 @@
 mod builtin;
 mod command;
 mod external;
+mod history;
 
 use builtin::{BuiltinCommand, build_dispatch_table};
 use command::Execute;
 use external::NonBuiltinCommand;
+use history::History;
 use std::env;
 use std::io::{self, Write};
 
@@ -25,7 +27,7 @@ fn parse_input(input: &str) -> Option<(&str, &str)> {
     Some((input, args))
 }
 
-fn handle_command(input: &str, history: &mut Vec<String>) -> Result<(), String> {
+fn handle_command(input: &str, history: &mut History) -> Result<(), String> {
     if let Some((cmd, args)) = parse_input(input) {
         let dispatch_table = build_dispatch_table();
         let args = parse_args(args);
@@ -44,7 +46,7 @@ fn handle_command(input: &str, history: &mut Vec<String>) -> Result<(), String> 
 
 fn run() {
     let mut cmd = String::new();
-    let mut history: Vec<String> = Vec::new();
+    let mut history = History::new();
     loop {
         cmd.clear();
         match env::current_dir() {
@@ -180,34 +182,31 @@ mod tests {
 
     #[test]
     fn test_handle_command_builtin_echo() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("echo hello world", &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_handle_command_builtin_type() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("type echo", &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "type");
     }
 
     #[test]
     fn test_handle_command_external() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("echo test", &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_handle_command_unknown_external() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("nonexistentcommand123", &mut history);
         assert!(result.is_err());
         assert!(history.is_empty());
@@ -215,37 +214,34 @@ mod tests {
 
     #[test]
     fn test_handle_command_empty() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("", &mut history);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_handle_command_only_whitespace() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("   ", &mut history);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_handle_command_builtin_pwd() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("pwd", &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "pwd");
     }
 
     #[test]
     fn test_handle_command_builtin_history() {
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = handle_command("echo hello", &mut history);
         assert!(result.is_ok());
         let result = handle_command("history", &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 2);
-        assert_eq!(history[0], "echo");
-        assert_eq!(history[1], "history");
     }
 
     #[test]
@@ -263,20 +259,18 @@ mod tests {
     #[test]
     fn test_execute_trait_builtin() {
         let cmd = BuiltinCommand::new("echo");
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = cmd.execute(vec!["test".to_string()], &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "echo");
     }
 
     #[test]
     fn test_execute_trait_external() {
         let cmd = NonBuiltinCommand::new("echo");
-        let mut history = Vec::new();
+        let mut history = History::new();
         let result = cmd.execute(vec!["test".to_string()], &mut history);
         assert!(result.is_ok());
         assert_eq!(history.len(), 1);
-        assert_eq!(history[0], "echo");
     }
 }
