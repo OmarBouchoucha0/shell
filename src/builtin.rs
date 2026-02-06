@@ -65,10 +65,13 @@ fn pwd(_args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
 }
 
 fn cd(args: Vec<String>, _history: &Vec<String>) -> Result<(), String> {
-    if args.len() == 0 {
+    if args.is_empty() {
         match env::home_dir() {
-            Some(path) => env::set_current_dir(path).map_err(|e| e.to_string())?,
-            None => return Err(format!("Home Directory not Found")),
+            Some(path) => {
+                env::set_current_dir(path).map_err(|e| e.to_string())?;
+                return Ok(());
+            }
+            _ => return Err("Home Directory not Found".to_string()),
         }
     }
     if args.len() > 1 {
