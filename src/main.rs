@@ -220,15 +220,6 @@ mod tests {
     }
 
     #[test]
-    fn test_build_dispatch_table_contents() {
-        let table = build_dispatch_table();
-        assert_eq!(table.len(), 3);
-        assert!(table.contains_key("echo"));
-        assert!(table.contains_key("exit"));
-        assert!(table.contains_key("type"));
-    }
-
-    #[test]
     fn test_execute_trait_builtin() {
         let cmd = BuiltinCommand::new("echo");
         let result = cmd.execute(vec!["test".to_string()]);

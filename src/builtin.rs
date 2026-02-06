@@ -106,8 +106,10 @@ mod tests {
         let table = build_dispatch_table();
         assert!(table.contains_key("echo"));
         assert!(table.contains_key("exit"));
+        assert!(table.contains_key("pwd"));
+        assert!(table.contains_key("cd"));
         assert!(table.contains_key("type"));
-        assert_eq!(table.len(), 3);
+        assert_eq!(table.len(), 5);
     }
 
     #[test]
