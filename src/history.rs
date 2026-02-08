@@ -1,10 +1,10 @@
+use rustyline::Result;
+use rustyline::history::{History, SearchDirection, SearchResult};
 use std::borrow::Cow;
 use std::collections::VecDeque;
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
-
-use rustyline::history::{History, SearchDirection, SearchResult};
-use rustyline::Result;
-
 const HISTORY_MAX: usize = 1000;
 
 pub struct ShellHistory {
@@ -30,7 +30,6 @@ impl ShellHistory {
         self.size += 1;
     }
 
-    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.size
     }
@@ -51,7 +50,6 @@ impl Default for ShellHistory {
     }
 }
 
-// Implement rustyline's History trait
 impl History for ShellHistory {
     fn get(&self, index: usize, _dir: SearchDirection) -> Result<Option<SearchResult<'_>>> {
         Ok(self.buffer.get(index).map(|entry| SearchResult {
@@ -95,7 +93,6 @@ impl History for ShellHistory {
 
     fn set_max_len(&mut self, max_len: usize) -> Result<()> {
         self.capacity = max_len;
-        // Trim history if needed
         while self.buffer.len() > max_len {
             self.buffer.pop_front();
             self.size -= 1;
@@ -104,18 +101,12 @@ impl History for ShellHistory {
     }
 
     fn ignore_dups(&mut self, _yes: bool) -> Result<()> {
-        // Not implemented - our history doesn't track this setting
         Ok(())
     }
 
-    fn ignore_space(&mut self, _yes: bool) {
-        // Not implemented - our history doesn't track this setting
-    }
+    fn ignore_space(&mut self, _yes: bool) {}
 
     fn save(&mut self, path: &Path) -> Result<()> {
-        use std::fs::File;
-        use std::io::{BufWriter, Write};
-
         let file = File::create(path)?;
         let mut writer = BufWriter::new(file);
         for entry in &self.buffer {
@@ -125,9 +116,6 @@ impl History for ShellHistory {
     }
 
     fn append(&mut self, path: &Path) -> Result<()> {
-        use std::fs::OpenOptions;
-        use std::io::{BufWriter, Write};
-
         let file = OpenOptions::new().create(true).append(true).open(path)?;
         let mut writer = BufWriter::new(file);
         for entry in &self.buffer {
@@ -137,9 +125,6 @@ impl History for ShellHistory {
     }
 
     fn load(&mut self, path: &Path) -> Result<()> {
-        use std::fs::File;
-        use std::io::{BufRead, BufReader};
-
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         for line in reader.lines() {

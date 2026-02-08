@@ -3,28 +3,26 @@ use crate::shell::Shell;
 use std::process::Command;
 use std::{env, path::Path};
 
-pub struct NonBuiltinCommand {
-    name: String,
+pub struct NonBuiltinCommand<'a> {
+    name: &'a str,
 }
 
-impl NonBuiltinCommand {
-    pub fn new(name: &str) -> Result<Self, String> {
+impl<'a> NonBuiltinCommand<'a> {
+    pub fn new(name: &'a str) -> Result<Self, String> {
         if external_command_exists(name) {
-            Ok(NonBuiltinCommand {
-                name: name.to_string(),
-            })
+            Ok(NonBuiltinCommand { name })
         } else {
             Err(format!("{}: command not found", name))
         }
     }
 }
 
-impl Execute for NonBuiltinCommand {
-    fn execute(&self, args: Vec<String>, shell: &mut Shell) -> Result<(), String> {
-        match Command::new(&self.name).args(args).output() {
+impl<'a> Execute for NonBuiltinCommand<'a> {
+    fn execute(&self, args: &Vec<String>, shell: &mut Shell) -> Result<(), String> {
+        match Command::new(self.name).args(args).output() {
             Ok(output) => {
                 print!("{}", String::from_utf8_lossy(&output.stdout));
-                shell.history_mut().push(self.name.clone());
+                shell.history_mut().push(self.name.to_string());
                 Ok(())
             }
             Err(_) => Err(format!("Unknown command: {}", self.name)),
@@ -75,7 +73,8 @@ mod tests {
     fn test_non_builtin_command_execute_valid() {
         let cmd = NonBuiltinCommand::new("echo").unwrap();
         let mut shell = Shell::new();
-        let result = cmd.execute(vec!["hello".to_string()], &mut shell);
+        let args = vec!["hello".to_string()];
+        let result = cmd.execute(&args, &mut shell);
         assert!(result.is_ok());
         assert_eq!(shell.history().len(), 1);
     }
@@ -84,7 +83,8 @@ mod tests {
     fn test_non_builtin_command_execute_with_args() {
         let cmd = NonBuiltinCommand::new("ls").unwrap();
         let mut shell = Shell::new();
-        let result = cmd.execute(vec!["-la".to_string()], &mut shell);
+        let args = vec!["-la".to_string()];
+        let result = cmd.execute(&args, &mut shell);
         assert!(result.is_ok());
         assert_eq!(shell.history().len(), 1);
     }

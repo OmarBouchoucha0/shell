@@ -70,7 +70,7 @@ impl Shell {
         let (cmd_name, args) = self.parse_input(input);
         let args = self.parse_args(args);
         let cmd = Cmd::new(cmd_name);
-        cmd.execute(args, self)?;
+        cmd.execute(&args, self)?;
         Ok(())
     }
 }
