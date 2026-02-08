@@ -2,6 +2,23 @@
 name = "shell"
 version = "0.1.0"
 edition = "2024"
+authors = ["Your Name <you@example.com>"]
+description = "A simple shell implementation in Rust"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/shell"
+rust-version = "1.85"
 
 [dependencies]
 rustyline = "17.0.1"
+
+[dev-dependencies]
+# Add any dev dependencies here
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
