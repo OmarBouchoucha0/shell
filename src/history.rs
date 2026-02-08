@@ -1,5 +1,5 @@
-use rustyline::history::{History, SearchDirection, SearchResult};
 use rustyline::Result;
+use rustyline::history::{History, SearchDirection, SearchResult};
 use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};

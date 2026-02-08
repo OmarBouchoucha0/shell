@@ -37,9 +37,10 @@ impl Shell {
                 Ok(line) => {
                     let trimmed = line.trim();
                     if !trimmed.is_empty()
-                        && let Err(e) = self.handle_command(trimmed) {
-                            eprintln!("Error: {e}");
-                        }
+                        && let Err(e) = self.handle_command(trimmed)
+                    {
+                        eprintln!("Error: {e}");
+                    }
                 }
 
                 Err(ReadlineError::Interrupted) => continue,

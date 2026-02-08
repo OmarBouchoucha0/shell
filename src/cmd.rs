@@ -1,4 +1,4 @@
-use crate::builtin::{check_builtin_existance, BuiltinCommand};
+use crate::builtin::{BuiltinCommand, check_builtin_existance};
 use crate::external::NonBuiltinCommand;
 use crate::shell::Shell;
 
