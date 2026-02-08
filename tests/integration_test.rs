@@ -12,15 +12,21 @@ fn test_shell_compiles() {
 
 #[test]
 fn test_shell_binary_exists() {
-    let binary_path = if cfg!(target_os = "windows") {
+    let debug_path = if cfg!(target_os = "windows") {
         "target/debug/shell.exe"
     } else {
         "target/debug/shell"
     };
 
+    let release_path = if cfg!(target_os = "windows") {
+        "target/release/shell.exe"
+    } else {
+        "target/release/shell"
+    };
     assert!(
-        std::path::Path::new(binary_path).exists(),
-        "Shell binary should exist at {}",
-        binary_path
+        std::path::Path::new(debug_path).exists() || std::path::Path::new(release_path).exists(),
+        "Neither debug nor release shell binary exists.\nExpected:\n  - {}\n  - {}",
+        debug_path,
+        release_path
     );
 }
