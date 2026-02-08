@@ -1,49 +1,58 @@
 use crate::cmd::{Cmd, Execute};
-use crate::history::History;
+use crate::history::ShellHistory;
+use rustyline::{error::ReadlineError, Config, Editor};
 use std::env;
-use std::io::{self, Write};
 
 pub struct Shell {
-    history: History,
+    history: ShellHistory,
 }
 
 impl Shell {
     pub fn new() -> Self {
         Shell {
-            history: History::new(),
+            history: ShellHistory::new(),
         }
+    }
+
+    pub fn history(&self) -> &ShellHistory {
+        &self.history
+    }
+
+    pub fn history_mut(&mut self) -> &mut ShellHistory {
+        &mut self.history
     }
 
     pub fn run(&mut self) {
-        let mut input = String::new();
+        let config = Config::default();
+        let history = ShellHistory::new();
+        let mut rl: Editor<(), ShellHistory> = Editor::with_history(config, history).unwrap();
+
         loop {
-            input.clear();
-            match env::current_dir() {
-                Ok(dir) => {
-                    print!("{}$ ", dir.display());
+            let prompt = match env::current_dir() {
+                Ok(dir) => format!("{}$ ", dir.display()),
+                Err(_) => "$ ".to_string(),
+            };
+
+            match rl.readline(&prompt) {
+                Ok(line) => {
+                    let trimmed = line.trim();
+                    if !trimmed.is_empty() {
+                        let _ = rl.add_history_entry(trimmed);
+                        if let Err(e) = self.handle_command(trimmed) {
+                            eprintln!("Error: {e}");
+                        }
+                    }
                 }
-                Err(e) => eprintln!("Error: {e}"),
-            }
 
-            if let Err(e) = io::stdout().flush() {
-                eprintln!("Error: {e}");
-                continue;
-            }
-
-            if let Err(e) = io::stdin().read_line(&mut input) {
-                eprintln!("Error: {e}");
-                continue;
-            }
-
-            let trimmed = input.trim();
-            if !trimmed.is_empty() {
-                if let Err(e) = self.handle_command(trimmed) {
-                    eprintln!("Error : {e}");
+                Err(ReadlineError::Interrupted) => continue,
+                Err(ReadlineError::Eof) => break,
+                Err(err) => {
+                    eprintln!("Error: {:?}", err);
+                    break;
                 }
             }
         }
     }
-
     fn parse_args(&self, args: &str) -> Vec<String> {
         args.split_whitespace().map(|s| s.to_string()).collect()
     }
@@ -61,7 +70,7 @@ impl Shell {
         let (cmd_name, args) = self.parse_input(input);
         let args = self.parse_args(args);
         let cmd = Cmd::new(cmd_name);
-        cmd.execute(args, &mut self.history)?;
+        cmd.execute(args, self)?;
         Ok(())
     }
 }
@@ -124,7 +133,7 @@ mod tests {
         let mut shell = Shell::new();
         let result = shell.handle_command("echo hello world");
         assert!(result.is_ok());
-        assert_eq!(shell.history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::cmd::{CmdFn, Execute};
 use crate::external::external_command_exists;
-use crate::history::History;
+use crate::shell::Shell;
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
@@ -21,23 +21,23 @@ impl BuiltinCommand {
     }
 }
 
-fn echo(args: Vec<String>, _history: &History) -> Result<(), String> {
+fn echo(args: Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     let output = args.join(" ");
     println!("{output}");
     Ok(())
 }
 
-fn exit(_args: Vec<String>, _history: &History) -> Result<(), String> {
+fn exit(_args: Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     std::process::exit(0);
 }
 
-fn pwd(_args: Vec<String>, _history: &History) -> Result<(), String> {
+fn pwd(_args: Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     let current_dir = env::current_dir().map_err(|e| e.to_string())?;
     println!("The current directory is: {}", current_dir.display());
     Ok(())
 }
 
-fn cd(args: Vec<String>, _history: &History) -> Result<(), String> {
+fn cd(args: Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     if args.is_empty() {
         match env::home_dir() {
             Some(path) => {
@@ -56,16 +56,16 @@ fn cd(args: Vec<String>, _history: &History) -> Result<(), String> {
     Ok(())
 }
 
-fn history_cmd(_args: Vec<String>, history: &History) -> Result<(), String> {
+fn history_cmd(_args: Vec<String>, shell: &mut Shell) -> Result<(), String> {
     let mut i: u32 = 1;
-    for line in history.iter() {
+    for line in shell.history().iter() {
         println!("{i} {line}");
         i += 1;
     }
     Ok(())
 }
 
-fn type_cmd(args: Vec<String>, _history: &History) -> Result<(), String> {
+fn type_cmd(args: Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     let dispatch_table = build_dispatch_table();
     if let Some(arg) = args.into_iter().next() {
         if arg.chars().all(char::is_whitespace) {
@@ -115,13 +115,13 @@ pub fn check_builtin_existance(name: &str) -> bool {
 }
 
 impl Execute for BuiltinCommand {
-    fn execute(&self, args: Vec<String>, history: &mut History) -> Result<(), String> {
+    fn execute(&self, args: Vec<String>, shell: &mut Shell) -> Result<(), String> {
         let dispatch_table = build_dispatch_table();
         if dispatch_table.contains_key(self.name.as_str()) {
             if let Some(func) = dispatch_table.get(self.name.as_str()) {
-                let result = func(args, history);
+                let result = func(args, shell);
                 if result.is_ok() {
-                    history.push(self.name.clone());
+                    shell.history_mut().push(self.name.clone());
                 }
                 result
             } else {
@@ -164,42 +164,42 @@ mod tests {
     #[test]
     fn test_builtin_command_execute_echo() {
         let cmd = BuiltinCommand::new("echo").unwrap();
-        let mut history = History::new();
-        let result = cmd.execute(vec!["hello".to_string(), "world".to_string()], &mut history);
+        let mut shell = Shell::new();
+        let result = cmd.execute(vec!["hello".to_string(), "world".to_string()], &mut shell);
         assert!(result.is_ok());
-        assert_eq!(history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]
     fn test_builtin_command_execute_type_builtin() {
         let cmd = BuiltinCommand::new("type").unwrap();
-        let mut history = History::new();
-        let result = cmd.execute(vec!["echo".to_string()], &mut history);
+        let mut shell = Shell::new();
+        let result = cmd.execute(vec!["echo".to_string()], &mut shell);
         assert!(result.is_ok());
-        assert_eq!(history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]
     fn test_builtin_command_execute_type_external() {
         let cmd = BuiltinCommand::new("type").unwrap();
-        let mut history = History::new();
-        let result = cmd.execute(vec!["ls".to_string()], &mut history);
+        let mut shell = Shell::new();
+        let result = cmd.execute(vec!["ls".to_string()], &mut shell);
         assert!(result.is_ok());
-        assert_eq!(history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]
     fn test_builtin_command_execute_unknown() {
         let _cmd = BuiltinCommand::new("echo").unwrap();
-        let mut history = History::new();
+        let mut shell = Shell::new();
         // Test with wrong command name (won't happen in practice since new() validates)
         let cmd_unknown = BuiltinCommand {
             name: "unknown".to_string(),
         };
-        let result = cmd_unknown.execute(vec![], &mut history);
+        let result = cmd_unknown.execute(vec![], &mut shell);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unknown builtin command"));
-        assert!(history.is_empty());
+        assert!(shell.history().is_empty());
     }
 
     #[test]
@@ -210,84 +210,84 @@ mod tests {
 
     #[test]
     fn test_echo_empty_args() {
-        let history = History::new();
-        let result = echo(vec![], &history);
+        let mut shell = Shell::new();
+        let result = echo(vec![], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_single_arg() {
-        let history = History::new();
-        let result = echo(vec!["hello".to_string()], &history);
+        let mut shell = Shell::new();
+        let result = echo(vec!["hello".to_string()], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_multiple_args() {
-        let history = History::new();
+        let mut shell = Shell::new();
         let result = echo(
             vec!["hello".to_string(), "world".to_string(), "test".to_string()],
-            &history,
+            &mut shell,
         );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_echo_with_spaces() {
-        let history = History::new();
-        let result = echo(vec!["hello world".to_string()], &history);
+        let mut shell = Shell::new();
+        let result = echo(vec!["hello world".to_string()], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_empty_args() {
-        let history = History::new();
-        let result = type_cmd(vec![], &history);
+        let mut shell = Shell::new();
+        let result = type_cmd(vec![], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_whitespace_arg() {
-        let history = History::new();
-        let result = type_cmd(vec!["   ".to_string()], &history);
+        let mut shell = Shell::new();
+        let result = type_cmd(vec!["   ".to_string()], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_type_multiple_args_mixed() {
-        let history = History::new();
+        let mut shell = Shell::new();
         let result = type_cmd(
             vec!["echo".to_string(), "ls".to_string(), "exit".to_string()],
-            &history,
+            &mut shell,
         );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_pwd() {
-        let history = History::new();
-        let result = pwd(vec![], &history);
+        let mut shell = Shell::new();
+        let result = pwd(vec![], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_cd() {
-        let history = History::new();
-        let result = cd(vec![".".to_string()], &history);
+        let mut shell = Shell::new();
+        let result = cd(vec![".".to_string()], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_cd_no_args() {
-        let history = History::new();
-        let result = cd(vec![], &history);
+        let mut shell = Shell::new();
+        let result = cd(vec![], &mut shell);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_history_command() {
-        let hist = History::new();
-        let result = history_cmd(vec![], &hist);
+        let mut shell = Shell::new();
+        let result = history_cmd(vec![], &mut shell);
         assert!(result.is_ok());
     }
 }

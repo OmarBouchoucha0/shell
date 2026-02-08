@@ -1,5 +1,5 @@
 use crate::cmd::Execute;
-use crate::history::History;
+use crate::shell::Shell;
 use std::process::Command;
 use std::{env, path::Path};
 
@@ -20,11 +20,11 @@ impl NonBuiltinCommand {
 }
 
 impl Execute for NonBuiltinCommand {
-    fn execute(&self, args: Vec<String>, history: &mut History) -> Result<(), String> {
+    fn execute(&self, args: Vec<String>, shell: &mut Shell) -> Result<(), String> {
         match Command::new(&self.name).args(args).output() {
             Ok(output) => {
                 print!("{}", String::from_utf8_lossy(&output.stdout));
-                history.push(self.name.clone());
+                shell.history_mut().push(self.name.clone());
                 Ok(())
             }
             Err(_) => Err(format!("Unknown command: {}", self.name)),
@@ -74,19 +74,19 @@ mod tests {
     #[test]
     fn test_non_builtin_command_execute_valid() {
         let cmd = NonBuiltinCommand::new("echo").unwrap();
-        let mut history = History::new();
-        let result = cmd.execute(vec!["hello".to_string()], &mut history);
+        let mut shell = Shell::new();
+        let result = cmd.execute(vec!["hello".to_string()], &mut shell);
         assert!(result.is_ok());
-        assert_eq!(history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]
     fn test_non_builtin_command_execute_with_args() {
         let cmd = NonBuiltinCommand::new("ls").unwrap();
-        let mut history = History::new();
-        let result = cmd.execute(vec!["-la".to_string()], &mut history);
+        let mut shell = Shell::new();
+        let result = cmd.execute(vec!["-la".to_string()], &mut shell);
         assert!(result.is_ok());
-        assert_eq!(history.len(), 1);
+        assert_eq!(shell.history().len(), 1);
     }
 
     #[test]
