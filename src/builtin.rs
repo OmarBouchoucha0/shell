@@ -1,4 +1,4 @@
-use crate::command::{CommandFn, Execute};
+use crate::cmd::{CmdFn, Execute};
 use crate::external::external_command_exists;
 use crate::history::History;
 use std::collections::HashMap;
@@ -10,41 +10,13 @@ pub struct BuiltinCommand {
 }
 
 impl BuiltinCommand {
-    pub fn new(name: &str) -> Self {
-        BuiltinCommand {
-            name: name.to_string(),
-        }
-    }
-}
-
-pub fn build_dispatch_table() -> HashMap<String, CommandFn> {
-    let mut map: HashMap<String, CommandFn> = HashMap::new();
-
-    map.insert("echo".to_string(), Box::new(echo));
-    map.insert("exit".to_string(), Box::new(exit));
-    map.insert("pwd".to_string(), Box::new(pwd));
-    map.insert("cd".to_string(), Box::new(cd));
-    map.insert("history".to_string(), Box::new(history));
-    map.insert("type".to_string(), Box::new(type_cmd));
-
-    map
-}
-
-impl Execute for BuiltinCommand {
-    fn execute(&self, args: Vec<String>, history: &mut History) -> Result<(), String> {
-        let dispatch_table = build_dispatch_table();
-        if dispatch_table.contains_key(self.name.as_str()) {
-            if let Some(func) = dispatch_table.get(self.name.as_str()) {
-                let result = func(args, history);
-                if result.is_ok() {
-                    history.push(self.name.clone());
-                }
-                result
-            } else {
-                Err(format!("Erreur Executing Command: {}", self.name))
-            }
+    pub fn new(name: &str) -> Result<Self, String> {
+        if check_builtin_existance(name) {
+            Ok(BuiltinCommand {
+                name: name.to_string(),
+            })
         } else {
-            Err(format!("Unknown builtin command: {}", self.name))
+            Err(format!("{}: not a builtin command", name))
         }
     }
 }
@@ -84,7 +56,7 @@ fn cd(args: Vec<String>, _history: &History) -> Result<(), String> {
     Ok(())
 }
 
-fn history(_args: Vec<String>, history: &History) -> Result<(), String> {
+fn history_cmd(_args: Vec<String>, history: &History) -> Result<(), String> {
     let mut i: u32 = 1;
     for line in history.iter() {
         println!("{i} {line}");
@@ -115,14 +87,66 @@ fn type_cmd(args: Vec<String>, _history: &History) -> Result<(), String> {
     Ok(())
 }
 
+pub fn build_dispatch_table() -> HashMap<String, CmdFn> {
+    let mut map: HashMap<String, CmdFn> = HashMap::new();
+
+    map.insert("echo".to_string(), Box::new(echo));
+    map.insert("exit".to_string(), Box::new(exit));
+    map.insert("pwd".to_string(), Box::new(pwd));
+    map.insert("cd".to_string(), Box::new(cd));
+    map.insert("history".to_string(), Box::new(history_cmd));
+    map.insert("type".to_string(), Box::new(type_cmd));
+
+    map
+}
+
+pub fn check_builtin_existance(name: &str) -> bool {
+    let mut builtins: Vec<&str> = Vec::new();
+    builtins.push("echo");
+    builtins.push("exit");
+    builtins.push("pwd");
+    builtins.push("cd");
+    builtins.push("history");
+    builtins.push("type");
+    if builtins.contains(&name) {
+        return true;
+    }
+    return false;
+}
+
+impl Execute for BuiltinCommand {
+    fn execute(&self, args: Vec<String>, history: &mut History) -> Result<(), String> {
+        let dispatch_table = build_dispatch_table();
+        if dispatch_table.contains_key(self.name.as_str()) {
+            if let Some(func) = dispatch_table.get(self.name.as_str()) {
+                let result = func(args, history);
+                if result.is_ok() {
+                    history.push(self.name.clone());
+                }
+                result
+            } else {
+                Err(format!("Erreur Executing Command: {}", self.name))
+            }
+        } else {
+            Err(format!("Unknown builtin command: {}", self.name))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_builtin_command_new() {
-        let cmd = BuiltinCommand::new("echo");
+        let cmd = BuiltinCommand::new("echo").unwrap();
         assert_eq!(cmd.name, "echo");
+    }
+
+    #[test]
+    fn test_builtin_command_new_invalid() {
+        let result = BuiltinCommand::new("invalid");
+        assert!(result.is_err());
     }
 
     #[test]
@@ -139,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_builtin_command_execute_echo() {
-        let cmd = BuiltinCommand::new("echo");
+        let cmd = BuiltinCommand::new("echo").unwrap();
         let mut history = History::new();
         let result = cmd.execute(vec!["hello".to_string(), "world".to_string()], &mut history);
         assert!(result.is_ok());
@@ -148,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_builtin_command_execute_type_builtin() {
-        let cmd = BuiltinCommand::new("type");
+        let cmd = BuiltinCommand::new("type").unwrap();
         let mut history = History::new();
         let result = cmd.execute(vec!["echo".to_string()], &mut history);
         assert!(result.is_ok());
@@ -157,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_builtin_command_execute_type_external() {
-        let cmd = BuiltinCommand::new("type");
+        let cmd = BuiltinCommand::new("type").unwrap();
         let mut history = History::new();
         let result = cmd.execute(vec!["ls".to_string()], &mut history);
         assert!(result.is_ok());
@@ -166,9 +190,13 @@ mod tests {
 
     #[test]
     fn test_builtin_command_execute_unknown() {
-        let cmd = BuiltinCommand::new("unknown");
+        let _cmd = BuiltinCommand::new("echo").unwrap();
         let mut history = History::new();
-        let result = cmd.execute(vec![], &mut history);
+        // Test with wrong command name (won't happen in practice since new() validates)
+        let cmd_unknown = BuiltinCommand {
+            name: "unknown".to_string(),
+        };
+        let result = cmd_unknown.execute(vec![], &mut history);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unknown builtin command"));
         assert!(history.is_empty());
@@ -176,8 +204,8 @@ mod tests {
 
     #[test]
     fn test_builtin_command_empty_name() {
-        let cmd = BuiltinCommand::new("");
-        assert_eq!(cmd.name, "");
+        let result = BuiltinCommand::new("");
+        assert!(result.is_err());
     }
 
     #[test]
@@ -259,7 +287,7 @@ mod tests {
     #[test]
     fn test_history_command() {
         let hist = History::new();
-        let result = history(vec![], &hist);
+        let result = history_cmd(vec![], &hist);
         assert!(result.is_ok());
     }
 }
