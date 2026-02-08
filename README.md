@@ -28,51 +28,6 @@ Run all tests:
 cargo test
 ```
 
-
-## Code Coverage
-
-Generate coverage report locally:
-
-```bash
-# Install cargo-tarpaulin
-cargo install cargo-tarpaulin
-
-# Generate HTML report
-cargo tarpaulin --out Html
-
-# Or XML report for CI
-cargo tarpaulin --out xml
-```
-
-
-## Security Audit
-
-Check for security vulnerabilities:
-
-```bash
-# Install cargo-audit
-cargo install cargo-audit
-
-# Run audit
-cargo audit
-```
-
-Security audits run automatically in CI on every PR.
-
-## Dependency Management
-
-We use `cargo-deny` to lint dependencies:
-
-```bash
-# Install cargo-deny
-cargo install cargo-deny
-
-# Check all dependency rules
-cargo deny check
-
-
-```
-
 ## Pre-commit Hooks
 
 We use pre-commit hooks to ensure code quality. To set them up:
