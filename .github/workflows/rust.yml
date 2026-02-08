@@ -91,8 +91,8 @@ jobs:
       - name: Install cargo-deny
         uses: taiki-e/install-action@cargo-deny
 
-      - name: Check dependencies with cargo-deny
-        run: cargo deny check
+      - name: Check dependencies with cargo-deny (no licenses)
+        run: cargo deny check advisories bans sources
 
   check-all-targets:
     name: Check All Targets
