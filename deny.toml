@@ -1,0 +1,68 @@
+# This template shows all possible configuration options.
+# For the full list of options, see: https://embarkstudios.github.io/cargo-deny/checks/cfg.html
+
+# Root options
+
+# When creating the crate graph used for the check, use the following features
+# for all crates, in addition to the features actually specified for each crate.
+# This is mostly useful for simplifying feature flag management in large crate
+# graphs.
+all-features = false
+# If true, the default feature list for every crate is assumed to be empty.
+# This is almost never what you want to do, but can be useful in niche cases.
+no-default-features = false
+
+# License checking disabled - see LICENSE-MIT and LICENSE-APACHE files
+# [licenses]
+# allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception"]
+# confidence-threshold = 0.8
+
+# This section is considered when running `cargo deny check bans`.
+# More documentation about the 'bans' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
+[bans]
+# Lint level for when multiple versions of the same crate are detected
+multiple-versions = "warn"
+# Lint level for when a crate marked as deprecated in the advisory database is detected
+deprecated = "warn"
+# Lint level for when a crate marked as yanked in the advisory database is detected
+yanked = "warn"
+# The graph highlighting used when creating dotgraphs for crates
+# with multiple versions
+highlight = "all"
+# The default lint level for `default` features for crates that are members of
+# the workspace that is being checked.
+workspace-default-features = "allow"
+# The default lint level for `default` features for external crates that are not
+# members of the workspace.
+external-default-features = "allow"
+
+# This section is considered when running `cargo deny check advisories`.
+# More documentation for the advisories section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
+[advisories]
+# The lint level for security advisories
+vulnerability = "deny"
+# The lint level for crates that have been marked as unmaintained in the
+# advisory database.
+unmaintained = "warn"
+# The lint level for crates that have been marked as unsound in the
+# advisory database.
+unsound = "deny"
+# The lint level for crates with a notice in the advisory database.
+notice = "warn"
+
+# This section is considered when running `cargo deny check sources`.
+# More documentation for the sources section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/sources/cfg.html
+[sources]
+# Lint level for what to happen when a crate from a crate registry that is not
+# in the allow list is encountered
+unknown-registry = "warn"
+# Lint level for what to happen when a crate from a git repository that is not
+# in the allow list is encountered
+unknown-git = "warn"
+# The list of allowed crate registries. Defaults to the crates.io index
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# The list of allowed Git repositories
+allow-git = []
