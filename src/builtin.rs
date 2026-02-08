@@ -19,23 +19,23 @@ impl<'a> BuiltinCommand<'a> {
     }
 }
 
-fn echo(args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
+fn echo(args: &[String], _shell: &mut Shell) -> Result<(), String> {
     let output = args.join(" ");
     println!("{output}");
     Ok(())
 }
 
-fn exit(_args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
+fn exit(_args: &[String], _shell: &mut Shell) -> Result<(), String> {
     std::process::exit(0);
 }
 
-fn pwd(_args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
+fn pwd(_args: &[String], _shell: &mut Shell) -> Result<(), String> {
     let current_dir = env::current_dir().map_err(|e| e.to_string())?;
     println!("The current directory is: {}", current_dir.display());
     Ok(())
 }
 
-fn cd(args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
+fn cd(args: &[String], _shell: &mut Shell) -> Result<(), String> {
     if args.is_empty() {
         match env::home_dir() {
             Some(path) => {
@@ -54,7 +54,7 @@ fn cd(args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
     Ok(())
 }
 
-fn history_cmd(_args: &Vec<String>, shell: &mut Shell) -> Result<(), String> {
+fn history_cmd(_args: &[String], shell: &mut Shell) -> Result<(), String> {
     let mut i: u32 = 1;
     for line in shell.history().iter() {
         println!("{i} {line}");
@@ -63,7 +63,7 @@ fn history_cmd(_args: &Vec<String>, shell: &mut Shell) -> Result<(), String> {
     Ok(())
 }
 
-fn type_cmd(args: &Vec<String>, _shell: &mut Shell) -> Result<(), String> {
+fn type_cmd(args: &[String], _shell: &mut Shell) -> Result<(), String> {
     let dispatch_table = build_dispatch_table();
     if let Some(arg) = args.first() {
         if arg.chars().all(char::is_whitespace) {
@@ -99,21 +99,12 @@ pub fn build_dispatch_table() -> HashMap<String, CmdFn> {
 }
 
 pub fn check_builtin_existance(name: &str) -> bool {
-    let mut builtins: Vec<&str> = Vec::new();
-    builtins.push("echo");
-    builtins.push("exit");
-    builtins.push("pwd");
-    builtins.push("cd");
-    builtins.push("history");
-    builtins.push("type");
-    if builtins.contains(&name) {
-        return true;
-    }
-    return false;
+    let builtins: Vec<&str> = vec!["echo", "exit", "pwd", "cd", "history", "type"];
+    builtins.contains(&name)
 }
 
 impl<'a> Execute for BuiltinCommand<'a> {
-    fn execute(&self, args: &Vec<String>, shell: &mut Shell) -> Result<(), String> {
+    fn execute(&self, args: &[String], shell: &mut Shell) -> Result<(), String> {
         let dispatch_table = build_dispatch_table();
         if let Some(func) = dispatch_table.get(self.name) {
             let result = func(args, shell);

@@ -18,7 +18,7 @@ impl<'a> NonBuiltinCommand<'a> {
 }
 
 impl<'a> Execute for NonBuiltinCommand<'a> {
-    fn execute(&self, args: &Vec<String>, shell: &mut Shell) -> Result<(), String> {
+    fn execute(&self, args: &[String], shell: &mut Shell) -> Result<(), String> {
         match Command::new(self.name).args(args).output() {
             Ok(output) => {
                 print!("{}", String::from_utf8_lossy(&output.stdout));

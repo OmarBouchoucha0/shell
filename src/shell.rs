@@ -36,11 +36,10 @@ impl Shell {
             match rl.readline(&prompt) {
                 Ok(line) => {
                     let trimmed = line.trim();
-                    if !trimmed.is_empty() {
-                        if let Err(e) = self.handle_command(trimmed) {
+                    if !trimmed.is_empty()
+                        && let Err(e) = self.handle_command(trimmed) {
                             eprintln!("Error: {e}");
                         }
-                    }
                 }
 
                 Err(ReadlineError::Interrupted) => continue,
@@ -58,10 +57,10 @@ impl Shell {
 
     fn parse_input<'a>(&self, input: &'a str) -> (&'a str, &'a str) {
         if let Some((cmd, args)) = input.split_once(" ") {
-            return (cmd, args);
+            (cmd, args)
         } else {
             let args = "";
-            return (input, args);
+            (input, args)
         }
     }
 

@@ -1,5 +1,5 @@
-use rustyline::Result;
 use rustyline::history::{History, SearchDirection, SearchResult};
+use rustyline::Result;
 use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
@@ -31,7 +31,7 @@ impl ShellHistory {
     }
 
     pub fn len(&self) -> usize {
-        self.size
+        self.buffer.len()
     }
 
     #[allow(dead_code)]
@@ -216,5 +216,147 @@ impl History for ShellHistory {
                 Ok(None)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_shell_history_new() {
+        let history = ShellHistory::new();
+        assert!(history.is_empty());
+        assert_eq!(history.len(), 0);
+    }
+
+    #[test]
+    fn test_shell_history_push() {
+        let mut history = ShellHistory::new();
+        history.push("echo hello".to_string());
+        assert_eq!(history.len(), 1);
+        assert!(!history.is_empty());
+
+        history.push("ls -la".to_string());
+        assert_eq!(history.len(), 2);
+    }
+
+    #[test]
+    fn test_shell_history_iter() {
+        let mut history = ShellHistory::new();
+        history.push("first".to_string());
+        history.push("second".to_string());
+
+        let entries: Vec<&String> = history.iter().collect();
+        assert_eq!(entries.len(), 2);
+    }
+
+    #[test]
+    fn test_shell_history_max_capacity() {
+        let mut history = ShellHistory::new();
+        // Fill to capacity
+        for i in 0..HISTORY_MAX {
+            history.push(format!("cmd {}", i));
+        }
+        assert_eq!(history.len(), HISTORY_MAX);
+
+        // Add one more, should remove oldest
+        history.push("newest".to_string());
+        assert_eq!(history.len(), HISTORY_MAX);
+    }
+
+    #[test]
+    fn test_history_trait_get() {
+        let mut history = ShellHistory::new();
+        history.add("test entry").unwrap();
+
+        let result = history.get(0, SearchDirection::Forward).unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().idx, 0);
+    }
+
+    #[test]
+    fn test_history_trait_add() {
+        let mut history = ShellHistory::new();
+        assert!(history.add("test").unwrap());
+        assert_eq!(history.len(), 1);
+
+        // Empty string should not be added
+        assert!(!history.add("").unwrap());
+        assert_eq!(history.len(), 1);
+    }
+
+    #[test]
+    fn test_history_trait_search() {
+        let mut history = ShellHistory::new();
+        history.add("echo hello world").unwrap();
+        history.add("ls -la").unwrap();
+        history.add("echo goodbye").unwrap();
+
+        // Search for "hello" going forward from start
+        let result = history
+            .search("hello", 0, SearchDirection::Forward)
+            .unwrap();
+        assert!(result.is_some());
+        let search_result = result.unwrap();
+        assert_eq!(search_result.idx, 0);
+
+        // Search for "echo" going reverse from end
+        let result = history.search("echo", 2, SearchDirection::Reverse).unwrap();
+        assert!(result.is_some());
+        let search_result = result.unwrap();
+        assert_eq!(search_result.idx, 2);
+    }
+
+    #[test]
+    fn test_history_trait_starts_with() {
+        let mut history = ShellHistory::new();
+        history.add("echo hello").unwrap();
+        history.add("ls -la").unwrap();
+
+        // Anchored search for "echo"
+        let result = history
+            .starts_with("echo", 0, SearchDirection::Forward)
+            .unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().idx, 0);
+
+        // Should not find "ls" when searching from index 0 with "ls" prefix
+        let result = history
+            .starts_with("ls", 0, SearchDirection::Forward)
+            .unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().idx, 1);
+    }
+
+    #[test]
+    fn test_history_trait_clear() {
+        let mut history = ShellHistory::new();
+        history.add("test").unwrap();
+        assert!(!history.is_empty());
+
+        history.clear().unwrap();
+        assert!(history.is_empty());
+        assert_eq!(history.len(), 0);
+    }
+
+    #[test]
+    fn test_history_trait_set_max_len() {
+        let mut history = ShellHistory::new();
+        for i in 0..10 {
+            history.add(&format!("cmd {}", i)).unwrap();
+        }
+        assert_eq!(history.len(), 10);
+
+        // Reduce max length
+        history.set_max_len(5).unwrap();
+        assert_eq!(history.len(), 5);
+        assert_eq!(history.capacity, 5);
+    }
+
+    #[test]
+    fn test_history_default() {
+        let history: ShellHistory = Default::default();
+        assert!(history.is_empty());
     }
 }
