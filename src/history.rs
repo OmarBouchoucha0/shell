@@ -26,7 +26,7 @@ impl ShellHistory {
         if self.size >= self.capacity {
             self.buffer.pop_front();
         }
-        self.buffer.push_back(format!("{0} {cmd}", self.size));
+        self.buffer.push_back(cmd);
         self.size += 1;
     }
 

@@ -1,6 +1,6 @@
 use crate::cmd::{Cmd, Execute};
 use crate::history::ShellHistory;
-use rustyline::{error::ReadlineError, Config, Editor};
+use rustyline::{Config, Editor, error::ReadlineError};
 use std::env;
 
 pub struct Shell {
@@ -37,7 +37,6 @@ impl Shell {
                 Ok(line) => {
                     let trimmed = line.trim();
                     if !trimmed.is_empty() {
-                        let _ = rl.add_history_entry(trimmed);
                         if let Err(e) = self.handle_command(trimmed) {
                             eprintln!("Error: {e}");
                         }

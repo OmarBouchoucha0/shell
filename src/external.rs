@@ -22,7 +22,9 @@ impl<'a> Execute for NonBuiltinCommand<'a> {
         match Command::new(self.name).args(args).output() {
             Ok(output) => {
                 print!("{}", String::from_utf8_lossy(&output.stdout));
-                shell.history_mut().push(self.name.to_string());
+                shell
+                    .history_mut()
+                    .push(format!("{} {}", self.name, args.join(" ")));
                 Ok(())
             }
             Err(_) => Err(format!("Unknown command: {}", self.name)),

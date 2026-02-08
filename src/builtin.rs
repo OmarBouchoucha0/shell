@@ -120,7 +120,7 @@ impl<'a> Execute for BuiltinCommand<'a> {
             if result.is_ok() {
                 shell
                     .history_mut()
-                    .push(format!("{} {:?}", self.name, args));
+                    .push(format!("{} {}", self.name, args.join(" ")));
             }
             result
         } else {
