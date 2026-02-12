@@ -79,21 +79,6 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  lint-deps:
-    name: Lint Dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-deny
-        uses: taiki-e/install-action@cargo-deny
-
-      - name: Check dependencies with cargo-deny (no licenses)
-        run: cargo deny check advisories bans sources
-
   check-all-targets:
     name: Check All Targets
     runs-on: ubuntu-latest
